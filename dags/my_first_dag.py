@@ -34,13 +34,13 @@ def req():
 with DAG (
     dag_id='my_first_dag',  # Название - должно совпадать с назвнием файла .py
     default_args=default_args,  # Словарь аргументов, созданный в 14 строке
-    description='Мой первый DAG в этом курсе',  #
+    description='Мой первый DAG в этом курсе',  # Описание
     schedule_interval=None,  # Расписание запусков (можно в формате Cron-выражения)
     start_date=days_ago(2),  # Обязательно дата в прошлом
-    tags=['my']
+    tags=['my']  # тег - удобно для разбивки DAG на группы
 ) as dag:
     bash_first = BashOperator(
-        task_id='bash_first',
+        task_id='bash_first',  # task_id должен быть уникальным в рамках одного DAG
         bash_command='echo Hello Airflow from Bash'
     )
     bash_last = BashOperator(
@@ -49,7 +49,7 @@ with DAG (
     )
     python_1 = PythonOperator(
         task_id='python_1',
-        python_callable=hw
+        python_callable=hw  # передаем название функции, без вызова ()
     )
     python_2 = PythonOperator(
         task_id='python_2',
