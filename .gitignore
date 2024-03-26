@@ -1,1 +1,4 @@
 /logs/
+/.dbeaver/
+/config.yaml
+/config.py
