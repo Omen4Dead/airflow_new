@@ -31,10 +31,10 @@ def req():
     print(requests.get('https://www.google.ru'))
 
 
-with DAG (
+with DAG(
     dag_id='my_first_dag',  # Название - должно совпадать с назвнием файла .py
     default_args=default_args,  # Словарь аргументов, созданный в 14 строке
-    description='Мой первый DAG в этом курсе',  # Описание
+    description='Мой первый DAG на курсе',  # Описание
     schedule_interval=None,  # Расписание запусков (можно в формате Cron-выражения)
     start_date=days_ago(2),  # Обязательно дата в прошлом
     tags=['my']  # тег - удобно для разбивки DAG на группы
