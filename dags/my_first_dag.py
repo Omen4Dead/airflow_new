@@ -3,7 +3,7 @@ from airflow.models.dag import DAG
 
 # Operators;
 from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, get_current_context
 
 # Utils;
 from airflow.utils.dates import days_ago
@@ -28,7 +28,10 @@ def hw():
 
 
 def req():
-    print(requests.get('https://www.google.ru'))
+    context = get_current_context()
+    for k, v in context.items():
+        print(k, ' -> ', v)
+
 
 
 with DAG(
