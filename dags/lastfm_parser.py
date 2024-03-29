@@ -64,11 +64,11 @@ def get_tracks():
 
 
 with DAG(
-    dag_id='lastfm_parser_dag_v2',  # Название - должно совпадать с назвнием файла .py
+    dag_id='lastfm_parser',  # Название - должно совпадать с назвнием файла .py
     default_args=default_args,  # Словарь аргументов, созданный в 14 строке
     description='',  # Описание
     schedule_interval='@daily',  # Расписание запусков (можно в формате Cron-выражения)
-    start_date=dt.datetime(2023, 1, 1),  # Обязательно дата в прошлом
+    start_date=dt.datetime(2024, 3, 1),  # Обязательно дата в прошлом
     tags=['my']  # тег - удобно для разбивки DAG на группы
 ) as dag:
 
