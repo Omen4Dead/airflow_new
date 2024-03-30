@@ -1,4 +1,5 @@
 import psycopg2
+import csv
 
 
 conn = psycopg2.connect(
@@ -8,4 +9,8 @@ conn = psycopg2.connect(
     password="postgres"
 )
 
-print(conn)
+with open('../files/tmp/songs_20240316.csv', newline='', encoding='UTF-8') as f:
+    file = csv.DictReader(f)
+    headers = file.fieldnames
+    for line in file:
+        print(line)
