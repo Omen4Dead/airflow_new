@@ -17,21 +17,7 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/files/tmp/songs_240326.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="/files/tmp/songs_240327.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="/files/tmp/songs_240328.csv">
+        <entry key="/files/tmp/songs_20240329.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
