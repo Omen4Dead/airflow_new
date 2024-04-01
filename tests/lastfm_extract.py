@@ -4,6 +4,7 @@ import datetime as dt
 import csv
 import json
 
+
 url = config.lastfm_root_url
 today = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 yesterday = today - dt.timedelta(days=1)
@@ -23,10 +24,11 @@ print(params)
 
 response = requests.get(url=url, params=params)
 print(response)
-print(response.text)
 
-with open(f'./files/raw/lastfm_raw_text_{yesterday.date().strftime("%y%m%d")}', 'w', encoding='utf-8') as f:
-    f.write(response.text)
-
-with open(f'./files/raw/lastfm_raw_json_{yesterday.date().strftime("%y%m%d")}', 'w', encoding='utf-8') as f:
-    f.write(str(response.json()))
+if response.status_code == 200:
+    with open(f'./files/raw/lastfm_raw_text_{yesterday.date().strftime("%y%m%d")}.json',
+              mode='w',
+              encoding='utf-8') as f:
+        f.write(response.text)
+else:
+    raise ValueError(f'Что-то не так с запросом. Возвращается статус {response.status_code}')

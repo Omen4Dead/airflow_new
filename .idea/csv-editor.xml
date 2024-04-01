@@ -24,6 +24,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/tests/files/tmp/lastfm_csv_240331.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
