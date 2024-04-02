@@ -1,5 +1,5 @@
-import datetime as dt
 import csv
+import datetime as dt
 import json
 
 today = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -30,7 +30,7 @@ with open(f'./files/raw/lastfm_raw_text_{yesterday.date().strftime("%y%m%d")}.js
             row['song_name'] = track['name']
             row['song_url'] = track['url']
             row['dt_listen'] = track['date']['#text']
-            row['image'] = track['image'][0]['#text']
+            row['image_url'] = track['image'][0]['#text']
             songs.append(row)
         except KeyError and IndexError as e:
             print(f'Ошибка в json-файле {f.name}. Не все атрибуты попали в словарь.')

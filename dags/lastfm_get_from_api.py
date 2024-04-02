@@ -69,6 +69,8 @@ with DAG(
     description='Получение данных о песнях через API',  # Описание
     schedule_interval='@daily',  # Расписание запусков (можно в формате Cron-выражения)
     start_date=dt.datetime(2024, 3, 10),  # Обязательно дата в прошлом
+    max_active_runs=1,
+    max_active_tasks=1,
     tags=['my']  # тег - удобно для разбивки DAG на группы
 ) as dag:
 

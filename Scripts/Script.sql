@@ -16,3 +16,17 @@ truncate table public.lastfm_raw ;
 
 select * 
 from public.lastfm_raw lr ;
+
+create table test_db.lastfm_raw
+(
+  artist_mbid varchar(1000),
+  artist_name varchar(1000),
+  streamable varchar(1000),
+  mbid varchar(1000),
+  album_mbid varchar(1000),
+  album_name varchar(1000),
+  song_name varchar(1000),
+  song_url varchar(1000),
+  dt_listen varchar(1000),
+  image_url varchar(1000)
+);

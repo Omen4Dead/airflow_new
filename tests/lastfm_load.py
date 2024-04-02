@@ -1,16 +1,47 @@
 import psycopg2
+import datetime as dt
 import csv
 
+today = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+yesterday = today - dt.timedelta(days=1)
 
-conn = psycopg2.connect(
-    host="localhost",
-    database="lastfm",
-    user="postgres",
-    password="postgres"
-)
+config = {
+    'host': "localhost",
+    'database': "postgres",
+    'user': "postgres",
+    'password': "postgres"}
 
-with open('../files/tmp/songs_20240316.csv', newline='', encoding='UTF-8') as f:
-    file = csv.DictReader(f)
-    headers = file.fieldnames
-    for line in file:
-        print(line)
+path = f'./files/tmp/lastfm_csv_{yesterday.date().strftime("%y%m%d")}.csv'
+
+insert_query = """INSERT INTO test_db.lastfm_raw (
+                    artist_mbid, artist_name, streamable, mbid,
+                    album_mbid, album_name, song_name,
+                    song_url, dt_listen, image_url)
+                  VALUES (
+                    %s, %s, %s, %s,
+                    %s, %s, %s,
+                    %s, %s, %s)"""
+
+conn = psycopg2.connect(**config)
+cursor = conn.cursor()
+
+cursor.execute("""TRUNCATE TABLE test_db.lastfm_raw""")
+
+with open(path, encoding='utf-8', mode='r') as f:
+    file = csv.DictReader(f, delimiter=',')
+    print(file.fieldnames)
+    for row in file:
+        cursor.execute(insert_query,
+                       [row['artist_mbid'],
+                        row['artist_name'],
+                        row['streamable'],
+                        row['mbid'],
+                        row['album_mbid'],
+                        row['album_name'],
+                        row['song_name'],
+                        row['song_url'],
+                        row['dt_listen'],
+                        row['image_url']
+                       ])
+    conn.commit()
+    conn.close()
