@@ -13,19 +13,19 @@ config = {
 
 path = f'./files/tmp/lastfm_csv_{yesterday.date().strftime("%y%m%d")}.csv'
 
-insert_query = """INSERT INTO test_db.lastfm_raw (
+insert_query = """INSERT INTO test_db.lastfm_raw_data (
                     artist_mbid, artist_name, streamable, mbid,
                     album_mbid, album_name, song_name,
                     song_url, dt_listen, image_url)
                   VALUES (
                     %s, %s, %s, %s,
                     %s, %s, %s,
-                    %s, %s, %s)"""
+                    %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'), %s)"""
 
 conn = psycopg2.connect(**config)
 cursor = conn.cursor()
 
-cursor.execute("""TRUNCATE TABLE test_db.lastfm_raw""")
+cursor.execute("""TRUNCATE TABLE test_db.lastfm_raw_data""")
 
 with open(path, encoding='utf-8', mode='r') as f:
     file = csv.DictReader(f, delimiter=',')
