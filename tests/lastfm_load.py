@@ -22,6 +22,10 @@ insert_query = """INSERT INTO test_db.lastfm_raw_data (
                     %s, %s, %s,
                     %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'), %s)"""
 
+insert_hist_query = """insert into test_db.lastfm_history_data
+                       select *
+                         from test_db.v_lastfm_unsaved_rows vlur"""
+
 conn = psycopg2.connect(**config)
 cursor = conn.cursor()
 
@@ -44,4 +48,7 @@ with open(path, encoding='utf-8', mode='r') as f:
                         row['image_url']
                        ])
     conn.commit()
-    conn.close()
+
+cursor.execute(insert_hist_query)
+conn.commit()
+conn.close()

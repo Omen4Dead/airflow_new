@@ -30,7 +30,7 @@ CREATE INDEX idx_lastfm_history_data_dt_listen ON test_db.lastfm_history_data (d
 
 
 -- Сравнение наличия данных и вставка недостающих строк
-insert into test_db.lastfm_history_data 
+insert into test_db.lastfm_history_data
  (surrogate_key, artist_mbid, artist_name, streamable, mbid, 
   album_mbid, album_name, song_name, song_url, dt_listen, image_url)
 select md5(lrd.artist_mbid || lrd.artist_name || lrd.streamable || lrd.mbid ||
@@ -49,6 +49,28 @@ where 1=1
                                                  lrd.album_mbid || lrd.album_name || lrd.song_name || lrd.song_url ||
                                                  lrd.dt_listen || lrd.image_url));
 
+
+create or replace view test_db.v_lastfm_unsaved_rows
+as
+select md5(lrd.artist_mbid || lrd.artist_name || lrd.streamable || lrd.mbid ||
+           lrd.album_mbid || lrd.album_name || lrd.song_name || lrd.song_url ||
+           lrd.dt_listen || lrd.image_url) surrogate_key, 
+       lrd.artist_mbid, lrd.artist_name, lrd.streamable, lrd.mbid,
+       lrd.album_mbid, lrd.album_name, lrd.song_name, lrd.song_url,
+       lrd.dt_listen, lrd.image_url
+from test_db.lastfm_raw_data lrd
+where 1=1
+  and not exists (select 1
+                    from test_db.lastfm_history_data lhd
+                   where 1=1
+                     and date_trunc('day', lhd.dt_listen) = date_trunc('day', lrd.dt_listen)
+                     and lhd.surrogate_key = md5(lrd.artist_mbid || lrd.artist_name || lrd.streamable || lrd.mbid ||
+                                                 lrd.album_mbid || lrd.album_name || lrd.song_name || lrd.song_url ||
+                                                 lrd.dt_listen || lrd.image_url));
+
+                                               
+-- Вставка недостающих строк с использованием view
+insert into test_db.lastfm_history_data
 select *
-  from lastfm_history_data lhd ;
+  from test_db.v_lastfm_unsaved_rows vlur  ;
 

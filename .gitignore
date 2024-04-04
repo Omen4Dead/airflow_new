@@ -2,3 +2,5 @@
 /.dbeaver/
 /config.yaml
 /config.py
+/files/
+/tests/files/
