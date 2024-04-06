@@ -3,7 +3,7 @@ import requests
 import config
 
 url = config.lastfm_root_url
-today = dt.datetime(2018, 1, 1).replace(hour=0, minute=0, second=0, microsecond=0)
+today = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 yesterday = today - dt.timedelta(days=1)
 
 print(yesterday)

@@ -35,8 +35,8 @@ def lastfm_extract():
               'user': Variable.get('lastfm_username'),
               'format': 'json',
               'limit': 200,
-              'to': int(date_to.timestamp()),
-              'from': int(date_from.timestamp()),
+              'to': int(date_to.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()),
+              'from': int(date_from.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()),
               'method': 'user.getrecenttracks'
               }
 
@@ -159,7 +159,8 @@ with DAG(
         dag_id='dag_lastfm_get_songs',  # Название - должно совпадать с назвнием файла .py
         default_args=default_args,
         description='Сбор истории прослушиваний с Last.fm',  # Описание
-        schedule_interval='@daily',
+        # schedule_interval='@hourly',
+        schedule='0 * * * *',
         start_date=dt.datetime(2018, 1, 1),  # Обязательно дата в прошлом
         max_active_runs=1,
         # max_active_tasks=1,

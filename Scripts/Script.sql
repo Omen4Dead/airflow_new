@@ -74,3 +74,10 @@ insert into test_db.lastfm_history_data
 select *
   from test_db.v_lastfm_unsaved_rows vlur  ;
 
+
+select lhd.dt_listen,
+       lhd.artist_name|| ' :: ' || lhd.album_name || ' :: ' || lhd.song_name as song,
+       lhd.dt_listen + interval '5 hour' as dt_local
+from test_db.lastfm_history_data lhd 
+order by dt_listen desc 
+;
