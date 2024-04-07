@@ -11,16 +11,16 @@ config = {
     'user': "postgres",
     'password': "postgres"}
 
-path = f'./files/tmp/lastfm_csv_{yesterday.date().strftime("%y%m%d")}.csv'
+path = f'./files/tmp/lastfm_csv_from_pd_{yesterday.date().strftime("%y%m%d")}.csv'
 
 insert_query = """INSERT INTO test_db.lastfm_raw_data (
                     artist_mbid, artist_name, streamable, mbid,
                     album_mbid, album_name, song_name,
-                    song_url, dt_listen, image_url)
+                    song_url, dt_listen)
                   VALUES (
                     %s, %s, %s, %s,
                     %s, %s, %s,
-                    %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'), %s)"""
+                    %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'))"""
 
 insert_hist_query = """insert into test_db.lastfm_history_data
                        select *
@@ -35,20 +35,21 @@ with open(path, encoding='utf-8', mode='r') as f:
     file = csv.DictReader(f, delimiter=',')
     print(file.fieldnames)
     for row in file:
+        if row['date.#text'] == '':
+            continue
         cursor.execute(insert_query,
-                       [row['artist_mbid'],
-                        row['artist_name'],
+                       [row['artist.mbid'],
+                        row['artist.#text'],
                         row['streamable'],
                         row['mbid'],
-                        row['album_mbid'],
-                        row['album_name'],
-                        row['song_name'],
-                        row['song_url'],
-                        row['dt_listen'],
-                        row['image_url']
+                        row['album.mbid'],
+                        row['album.#text'],
+                        row['name'],
+                        row['url'],
+                        row['date.#text']
                        ])
     conn.commit()
 
-cursor.execute(insert_hist_query)
-conn.commit()
+# cursor.execute(insert_hist_query)
+# conn.commit()
 conn.close()

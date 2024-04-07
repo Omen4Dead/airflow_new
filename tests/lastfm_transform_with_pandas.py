@@ -1,5 +1,4 @@
 import pandas as pd
-import csv
 import datetime as dt
 import json
 
@@ -17,6 +16,10 @@ with open(f'./files/raw/lastfm_raw_text_{yesterday.date().strftime("%y%m%d")}.js
     file = json.load(f)
     data = file['recenttracks']['track']
     df = pd.json_normalize(data)
-    print(df.head())
-    df.to_csv(f'./files/tmp/lastfm_csv_{yesterday.date().strftime("%y%m%d")}.csv', sep=',')
+    # df = df.rename(columns={'x': 'name', 'y': 'salary'})
+print(df.shape)
+print(df.keys())
 
+df.to_csv(f'./files/tmp/lastfm_csv_from_pd_{yesterday.date().strftime("%y%m%d")}.csv',
+        sep=',',
+        encoding='utf-8')

@@ -4,7 +4,6 @@ from airflow.models import Variable
 
 # Import operators, utils
 from airflow.operators.python import PythonOperator, get_current_context
-from airflow.utils.dates import days_ago
 
 # Other imports
 import requests
@@ -13,6 +12,7 @@ import json
 import datetime as dt
 from datetime import timedelta
 import psycopg2
+import pandas as pd
 
 default_args = {
     "owner": "Nick",
@@ -25,18 +25,24 @@ default_args = {
 }
 
 
+def get_context():
+    context = get_current_context()
+    for k, v in context:
+        print(k, '->', v)
+
+
 def lastfm_extract():
     context = get_current_context()
-    date_from = context['prev_execution_date']
-    date_to = context['execution_date']
+    date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
+    date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     print(date_from, '->', date_to)
 
     params = {'api_key': Variable.get('lastfm_key'),
               'user': Variable.get('lastfm_username'),
               'format': 'json',
               'limit': 200,
-              'to': int(date_to.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()),
-              'from': int(date_from.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()),
+              'to': int(date_to.timestamp()),
+              'from': int(date_from.timestamp()),
               'method': 'user.getrecenttracks'
               }
 
@@ -54,8 +60,8 @@ def lastfm_extract():
 
 def lastfm_transform():
     context = get_current_context()
-    date_from = context['prev_execution_date']
-    date_to = context['execution_date']
+    date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
+    date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     print(date_from, '->', date_to)
 
     songs = []
@@ -90,7 +96,7 @@ def lastfm_transform():
         return None
     headers = songs[0].keys()
 
-    with open(f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv',
+    with open(f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}_old.csv',
               mode='w',
               encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=headers)
@@ -98,10 +104,26 @@ def lastfm_transform():
         writer.writerows(songs)
 
 
+def lasfm_transform_pandas():
+    context = get_current_context()
+    date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
+    date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
+    print(date_from, '->', date_to)
+
+    with open(file=f'./files/raw/lastfm_raw_text_{date_from.date().strftime("%y%m%d")}.json',
+              mode='r',
+              encoding='utf-8') as f:
+        file = json.load(f)
+        data = file['recenttracks']['track']
+        df = pd.json_normalize(data)
+        print(df.head())
+        df.to_csv(path_or_buf=f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv', sep=',')
+
+
 def lastfm_load():
     context = get_current_context()
-    date_from = context['prev_execution_date']
-    date_to = context['execution_date']
+    date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
+    date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     print(date_from, '->', date_to)
     config = {
         'host': "host.docker.internal",
@@ -114,11 +136,11 @@ def lastfm_load():
     insert_query = """INSERT INTO test_db.lastfm_raw_data (
                         artist_mbid, artist_name, streamable, mbid,
                         album_mbid, album_name, song_name,
-                        song_url, dt_listen, image_url)
+                        song_url, dt_listen)
                       VALUES (
                         %s, %s, %s, %s,
                         %s, %s, %s,
-                        %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'), %s)"""
+                        %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'))"""
 
     insert_hist_query = """insert into test_db.lastfm_history_data
                            select *
@@ -129,26 +151,28 @@ def lastfm_load():
 
     cursor.execute("""TRUNCATE TABLE test_db.lastfm_raw_data""")
 
-    try:
-        with open(path, encoding='utf-8', mode='r', ) as f:
-            file = csv.DictReader(f, delimiter=',')
-            print(file.fieldnames)
-            for row in file:
-                cursor.execute(insert_query,
-                               [row['artist_mbid'],
-                                row['artist_name'],
-                                row['streamable'],
-                                row['mbid'],
-                                row['album_mbid'],
-                                row['album_name'],
-                                row['song_name'],
-                                row['song_url'],
-                                row['dt_listen'],
-                                row['image_url']
-                                ])
-            conn.commit()
-    except FileNotFoundError as e:
-        print(e, '->', 'Файл не создался на предыдущем шаге. Возможно в этот день не было записанных песен')
+    with open(path, encoding='utf-8', mode='r', ) as f:
+        file = csv.DictReader(f, delimiter=',')
+        print(file.fieldnames)
+        for row in file:
+            try:
+                if row['date.#text'] == '':
+                    continue
+            except KeyError as e:
+                print(e, '->', 'За этот период не было прослушиваний')
+                break
+            cursor.execute(insert_query,
+                           [row['artist.mbid'],
+                            row['artist.#text'],
+                            row['streamable'],
+                            row['mbid'],
+                            row['album.mbid'],
+                            row['album.#text'],
+                            row['name'],
+                            row['url'],
+                            row['date.#text']
+                            ])
+        conn.commit()
 
     cursor.execute(insert_hist_query)
     conn.commit()
@@ -160,12 +184,18 @@ with DAG(
         default_args=default_args,
         description='Сбор истории прослушиваний с Last.fm',  # Описание
         # schedule_interval='@hourly',
-        schedule='0 * * * *',
+        schedule='@daily',
         start_date=dt.datetime(2018, 1, 1),  # Обязательно дата в прошлом
         max_active_runs=1,
         # max_active_tasks=1,
         tags=['my']
 ) as dag:
+
+    start_context = PythonOperator(
+        task_id='start_context',
+        python_callable=get_context
+    )
+
     extract_base = PythonOperator(
         task_id='extract_base',
         python_callable=lastfm_extract
@@ -176,9 +206,14 @@ with DAG(
         python_callable=lastfm_transform
     )
 
+    transform = PythonOperator(
+        task_id='transform',
+        python_callable=lasfm_transform_pandas
+    )
+
     load_base = PythonOperator(
         task_id='load_base',
         python_callable=lastfm_load
     )
 
-    extract_base >> transform_base >> load_base
+    start_context >> extract_base >> [transform_base, transform] >> load_base
