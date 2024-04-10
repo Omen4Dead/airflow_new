@@ -10,7 +10,7 @@ print(yesterday)
 print(today)
 
 params = {'api_key': config.lastfm_key,
-          'user': config.lastfm_usermane,
+          'user': config.lastfm_username,
           'format': 'json',
           'limit': 200,
           'to': int(today.timestamp()),

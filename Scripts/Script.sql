@@ -91,4 +91,8 @@ set surrogate_key = md5(lrd.artist_mbid || lrd.artist_name || lrd.streamable || 
            lrd.dt_listen);
 
 select *
-  from test_db.v_lastfm_unsaved_rows vlur 
+  from test_db.v_lastfm_unsaved_rows vlur;
+  
+select lhd.artist_mbid , lhd.arti
+from test_db.lastfm_history_data lhd 
+where date_trunc('day', lhd.dt_listen) = current_date - 2

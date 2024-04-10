@@ -26,12 +26,20 @@ default_args = {
 
 
 def get_context():
+    """
+    Получение лога с контекстом выполнения. Удобно для дебага
+    :return:
+    """
     context = get_current_context()
-    for k, v in context:
+    for k, v in context.items():
         print(k, '->', v)
 
 
 def lastfm_extract():
+    """
+    Получение данных по API и сохранение в исходном виде как JSON
+    :return:
+    """
     context = get_current_context()
     date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
@@ -59,6 +67,10 @@ def lastfm_extract():
 
 
 def lastfm_transform():
+    """
+    Парсинг JSON и раскладывание его в CSV с использованием стандартных библиотек
+    :return:
+    """
     context = get_current_context()
     date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
@@ -72,6 +84,8 @@ def lastfm_transform():
         file = json.load(f)
         data = file['recenttracks']['track']
         print(data)
+        if len(data) == 0:
+            return None
         for track in data:
             row = dict()
             if '@attr' in track:
@@ -91,9 +105,6 @@ def lastfm_transform():
             except KeyError and IndexError as e:
                 print(f'Ошибка в json-файле {f.name}. Не все атрибуты попали в словарь.')
 
-    print(songs)
-    if len(songs) == 0:
-        return None
     headers = songs[0].keys()
 
     with open(f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}_old.csv',
@@ -105,6 +116,10 @@ def lastfm_transform():
 
 
 def lasfm_transform_pandas():
+    """
+    Парсинг JSON с использованием pandas
+    :return:
+    """
     context = get_current_context()
     date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
@@ -117,10 +132,15 @@ def lasfm_transform_pandas():
         data = file['recenttracks']['track']
         df = pd.json_normalize(data)
         print(df.head())
-        df.to_csv(path_or_buf=f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv', sep=',')
+        df.to_csv(path_or_buf=f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv',
+                  sep=',')
 
 
 def lastfm_load():
+    """
+    Загрузка данных из CSV d
+    :return:
+    """
     context = get_current_context()
     date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
@@ -213,7 +233,8 @@ with DAG(
 
     load_base = PythonOperator(
         task_id='load_base',
-        python_callable=lastfm_load
+        python_callable=lastfm_load,
+        trigger_rule='one_success'
     )
 
     start_context >> extract_base >> [transform_base, transform] >> load_base
