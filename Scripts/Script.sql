@@ -93,6 +93,57 @@ set surrogate_key = md5(lrd.artist_mbid || lrd.artist_name || lrd.streamable || 
 select *
   from test_db.v_lastfm_unsaved_rows vlur;
   
-select lhd.artist_mbid , lhd.arti
+select lhd.artist_mbid , lhd.artist_name 
 from test_db.lastfm_history_data lhd 
-where date_trunc('day', lhd.dt_listen) = current_date - 2
+where date_trunc('day', lhd.dt_listen) = current_date - 2;
+
+
+drop table test_db.lastfm_artists_data;
+create table test_db.lastfm_artists_data (
+  artist_name text,
+  artist_mbid text,
+  artist_url text,
+  tags text [],
+  dt_published timestamp,
+  dt_insert timestamptz default now()
+);
+
+select raw.artist_name, raw.artist_mbid,
+       raw.artist_url,  raw.tags,
+       raw.dt_published
+from test_db.lastfm_artists_data_raw raw;
+
+create table test_db.lastfm_artists_data
+as
+select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key,
+       raw.artist_name, raw.artist_mbid,
+       raw.artist_url,  raw.tags,
+       raw.dt_published, raw.dt_insert
+  from test_db.lastfm_artists_data_raw raw;
+
+
+create unique INDEX lastfm_artists_data_pk ON test_db.lastfm_artists_data (surrogate_key);
+
+create view test_db.v_lastfm_artist_unsaved_rows
+as
+select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key, 
+       raw.artist_name, raw.artist_mbid,
+       raw.artist_url,  raw.tags,
+       raw.dt_published
+from test_db.lastfm_artists_data_raw raw
+where 1=1
+  and not exists (select 1
+                    from test_db.lastfm_artists_data lad
+                   where 1=1
+                     and lad.surrogate_key = md5(raw.artist_name || raw.artist_mbid || raw.artist_url));
+              
+select * from test_db.v_lastfm_artist_unsaved_rows vlaur
+where 1=1;
+
+
+select to_char(dt_listen, 'DAY') as day,
+       count(1) as cnt
+  from test_db.lastfm_history_data lhd
+  group by to_char(dt_listen, 'DAY')
+;
+

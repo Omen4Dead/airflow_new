@@ -199,6 +199,104 @@ def lastfm_load():
     conn.close()
 
 
+def lastfm_get_artists_info():
+    pg_config = {
+        'host': "host.docker.internal",
+        'database': "postgres",
+        'user': "postgres",
+        'password': "postgres"}
+    conn = psycopg2.connect(**pg_config)
+
+    url = Variable.get('lastfm_root_url')
+    artist_info = []
+
+    with conn.cursor() as curs:
+        curs.execute('TRUNCATE TABLE test_db.lastfm_artists_data_raw')
+
+        curs.execute('''select distinct lhd.artist_name 
+                          from test_db.lastfm_history_data lhd 
+                         where date_trunc('day', lhd.dt_listen) = current_date - 2''')
+
+        for row in curs:
+            # print(row)
+            params = {'api_key': Variable.get('lastfm_key'),
+                      'format': 'json',
+                      'method': 'artist.getinfo',
+                      'artist': row[0],
+                      'lang': 'ru',
+                      'username': Variable.get('lastfm_username')
+                      }
+            # print(params)
+            response = requests.get(url=url, params=params)
+            if response.status_code != 200:
+                print(response.status_code, response.text)
+                raise ResourceWarning
+            # print(response.text)
+            try:
+                df = pd.json_normalize(response.json()['artist'])
+            except KeyError as e:
+                print(e, ' -> Ошибка разбора JSON, вероятно, что артист с таким именем не нашелся')
+                break
+            # распечатываем список атрибутов после из нормализации
+            # print(df.keys())
+
+            try:
+                artist_name = df.name[0]
+            except AttributeError as e:
+                artist_name = ''
+            try:
+                artist_mbid = df.mbid[0]
+            except AttributeError as e:
+                artist_mbid = ''
+            try:
+                artist_url = df.url[0]
+            except AttributeError as e:
+                artist_url = ''
+            try:
+                tags = pd.json_normalize(df['tags.tag'][0])['name'].tolist()
+            except AttributeError and KeyError as e:
+                tags = []
+            try:
+                dt_published = df['bio.published'][0]
+            except AttributeError and KeyError as e:
+                dt_published = ''
+            artist_attrs = {'name': artist_name,
+                            'artist_mbid': artist_mbid,
+                            'artist_url': artist_url,
+                            'tags': tags,
+                            'dt_published': dt_published
+                            }
+            # print(artist_attrs)
+
+            artist_info.append(artist_attrs)
+
+        for row in artist_info:
+            curs.execute("""INSERT INTO test_db.lastfm_artists_data_raw (
+                                      artist_name, artist_mbid, artist_url,
+                                      tags, dt_published)
+                                    VALUES (
+                                      %s, %s, %s,
+                                      %s, to_timestamp(%s, 'DD Mon YYYY, HH24:MI'))""",
+                         [row['name'],
+                          row['artist_mbid'],
+                          row['artist_url'],
+                          row['tags'],
+                          row['dt_published']
+                          ]
+                         )
+        conn.commit()
+
+        curs.execute("""INSERT INTO test_db.lastfm_artists_data
+                        (surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published)
+                        SELECT surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published
+                          FROM test_db.v_lastfm_artist_unsaved_rows""")
+        conn.commit()
+
+    artists_df = pd.DataFrame(artist_info)
+
+    artists_df.to_csv('./files/artists.csv')
+
+
 with DAG(
         dag_id='dag_lastfm_get_songs',  # Название - должно совпадать с назвнием файла .py
         default_args=default_args,
@@ -237,4 +335,10 @@ with DAG(
         trigger_rule='one_success'
     )
 
-    start_context >> extract_base >> [transform_base, transform] >> load_base
+    load_artist_info = PythonOperator(
+        task_id='load_artist_info',
+        python_callable=lastfm_get_artists_info,
+        trigger_rule='one_success'
+    )
+
+    start_context >> extract_base >> [transform_base, transform] >> load_base >> load_artist_info
