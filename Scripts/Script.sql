@@ -147,3 +147,10 @@ select to_char(dt_listen, 'DAY') as day,
   group by to_char(dt_listen, 'DAY')
 ;
 
+select distinct lhd.artist_name 
+  from test_db.lastfm_history_data lhd 
+ where date_trunc('day', lhd.dt_listen) = current_date - 2
+ and not exists (select 1
+                   from test_db.lastfm_artists_data lad
+                  where lhd.artist_name = lad.artist_name)
+;
