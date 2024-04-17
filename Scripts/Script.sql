@@ -136,21 +136,14 @@ where 1=1
                     from test_db.lastfm_artists_data lad
                    where 1=1
                      and lad.surrogate_key = md5(raw.artist_name || raw.artist_mbid || raw.artist_url));
-              
-select * from test_db.v_lastfm_artist_unsaved_rows vlaur
-where 1=1;
 
-
-select to_char(dt_listen, 'DAY') as day,
-       count(1) as cnt
+select extract(year from dt_listen) as "year",
+       to_char(dt_listen, 'Day') as "day",
+       count(1) as "cnt"
   from test_db.lastfm_history_data lhd
-  group by to_char(dt_listen, 'DAY')
-;
-
-select distinct lhd.artist_name 
-  from test_db.lastfm_history_data lhd 
- where date_trunc('day', lhd.dt_listen) = current_date - 2
- and not exists (select 1
-                   from test_db.lastfm_artists_data lad
-                  where lhd.artist_name = lad.artist_name)
+  where 1=1
+    and extract(hour from dt_listen + '5 hours') < 22
+    and extract(hour from dt_listen + '5 hours') > 7
+  group by extract(year from dt_listen), to_char(dt_listen, 'Day')
+  order by cnt, year, day
 ;
