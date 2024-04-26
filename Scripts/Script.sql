@@ -147,3 +147,26 @@ select extract(year from dt_listen) as "year",
   group by extract(year from dt_listen), to_char(dt_listen, 'Day')
   order by cnt, year, day
 ;
+
+select *
+  from test_db.lastfm_artists_data_raw ladr ;
+
+select * from test_db.lastfm_artists_data lad
+where artist_url in (select ladr.artist_url from test_db.lastfm_artists_data_raw ladr);
+
+INSERT INTO test_db.lastfm_artists_data
+  (surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published)
+select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key, 
+       raw.artist_name, raw.artist_mbid,
+       raw.artist_url,  raw.tags,
+       raw.dt_published
+from test_db.lastfm_artists_data_raw raw
+  ON conflict (surrogate_key) DO UPDATE 
+ SET tags = EXCLUDED.tags,
+     dt_published = EXCLUDED.dt_published,
+     dt_insert = EXCLUDED.dt_insert
+  ;
+
+  
+  
+  
