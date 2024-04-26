@@ -290,16 +290,19 @@ def lastfm_get_artists_info():
         conn.commit()
 
         curs.execute("""INSERT INTO test_db.lastfm_artists_data
-                        (surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published)
-                        SELECT surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published
-                          FROM test_db.v_lastfm_artist_unsaved_rows""")
+                          (surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published)
+                        select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key, 
+                               raw.artist_name, raw.artist_mbid,
+                               raw.artist_url,  raw.tags,
+                               raw.dt_published
+                          from test_db.lastfm_artists_data_raw raw
+                            ON conflict (surrogate_key) DO UPDATE 
+                           SET tags = EXCLUDED.tags,
+                               dt_published = EXCLUDED.dt_published,
+                               dt_insert = EXCLUDED.dt_insert""")
         conn.commit()
 
-    artists_df = pd.DataFrame(artist_info)
-
-    artists_df.to_csv('./files/artists.csv')
-
-
+        
 with DAG(
         dag_id='dag_lastfm_get_songs',  # Название - должно совпадать с назвнием файла .py
         default_args=default_args,
