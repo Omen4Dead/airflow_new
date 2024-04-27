@@ -215,10 +215,7 @@ def lastfm_get_artists_info():
 
         curs.execute('''select distinct lhd.artist_name 
                           from test_db.lastfm_history_data lhd 
-                         where date_trunc('day', lhd.dt_listen) = current_date - 2
-                           and not exists (select 1
-                                             from test_db.lastfm_artists_data lad
-                                            where lhd.artist_name = lad.artist_name)''')
+                         where date_trunc('day', lhd.dt_listen) = current_date - 2''')
 
         for row in curs:
             # print(row)
@@ -302,7 +299,7 @@ def lastfm_get_artists_info():
                                dt_insert = EXCLUDED.dt_insert""")
         conn.commit()
 
-        
+
 with DAG(
         dag_id='dag_lastfm_get_songs',  # Название - должно совпадать с назвнием файла .py
         default_args=default_args,

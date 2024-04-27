@@ -166,7 +166,6 @@ from test_db.lastfm_artists_data_raw raw
      dt_published = EXCLUDED.dt_published,
      dt_insert = EXCLUDED.dt_insert
   ;
-
   
   
   
