@@ -153,7 +153,7 @@ def lastfm_load():
 
     path = f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv'
 
-    insert_query = """INSERT INTO test_db.lastfm_raw_data (
+    insert_query = """INSERT INTO test_db.raw_lastfm_songs (
                         artist_mbid, artist_name, streamable, mbid,
                         album_mbid, album_name, song_name,
                         song_url, dt_listen)
@@ -162,14 +162,14 @@ def lastfm_load():
                         %s, %s, %s,
                         %s, to_timestamp(%s, 'DD Mon YYYY HH24:MI'))"""
 
-    insert_hist_query = """insert into test_db.lastfm_history_data
+    insert_hist_query = """insert into test_db.lastfm_songs
                            select *
-                             from test_db.v_lastfm_unsaved_rows vlur"""
+                             from test_db.v_lastfm_unsaved_songs vlur"""
 
     conn = psycopg2.connect(**config)
     cursor = conn.cursor()
 
-    cursor.execute("""TRUNCATE TABLE test_db.lastfm_raw_data""")
+    cursor.execute("""TRUNCATE TABLE test_db.raw_lastfm_songs""")
 
     with open(path, encoding='utf-8', mode='r', ) as f:
         file = csv.DictReader(f, delimiter=',')
@@ -211,10 +211,10 @@ def lastfm_get_artists_info():
     artist_info = []
 
     with conn.cursor() as curs:
-        curs.execute('TRUNCATE TABLE test_db.lastfm_artists_data_raw')
+        curs.execute('TRUNCATE TABLE test_db.raw_lastfm_artists')
 
         curs.execute('''select distinct lhd.artist_name 
-                          from test_db.lastfm_history_data lhd 
+                          from test_db.lastfm_songs lhd 
                          where date_trunc('day', lhd.dt_listen) = current_date - 2''')
 
         for row in curs:
@@ -271,7 +271,7 @@ def lastfm_get_artists_info():
             artist_info.append(artist_attrs)
 
         for row in artist_info:
-            curs.execute("""INSERT INTO test_db.lastfm_artists_data_raw (
+            curs.execute("""INSERT INTO test_db.lastfm_artists_raw (
                                       artist_name, artist_mbid, artist_url,
                                       tags, dt_published)
                                     VALUES (
@@ -286,13 +286,13 @@ def lastfm_get_artists_info():
                          )
         conn.commit()
 
-        curs.execute("""INSERT INTO test_db.lastfm_artists_data
+        curs.execute("""INSERT INTO test_db.lastfm_artists
                           (surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published)
                         select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key, 
                                raw.artist_name, raw.artist_mbid,
                                raw.artist_url,  raw.tags,
                                raw.dt_published
-                          from test_db.lastfm_artists_data_raw raw
+                          from test_db.lastfm_artists_raw raw
                             ON conflict (surrogate_key) DO UPDATE 
                            SET tags = EXCLUDED.tags,
                                dt_published = EXCLUDED.dt_published,

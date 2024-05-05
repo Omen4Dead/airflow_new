@@ -167,5 +167,37 @@ from test_db.lastfm_artists_data_raw raw
      dt_insert = EXCLUDED.dt_insert
   ;
   
-  
-  
+COMMENT ON COLUMN test_db.lastfm_artists_data.artist_name IS 'Название артиста';
+COMMENT ON COLUMN test_db.lastfm_artists_data.artist_mbid IS 'ID артиста';
+COMMENT ON COLUMN test_db.lastfm_artists_data.artist_url IS 'URL (ссылка) артиста';
+COMMENT ON COLUMN test_db.lastfm_artists_data.tags IS 'Тэги';
+COMMENT ON COLUMN test_db.lastfm_artists_data.dt_published IS 'Дата последнего изменения тэгов артиста';
+COMMENT ON COLUMN test_db.lastfm_artists_data.dt_insert IS 'Дата вставки записи';
+
+COMMENT ON COLUMN test_db.lastfm_history_data.artist_mbid is 'ID артиста'; 
+COMMENT ON COLUMN test_db.lastfm_history_data.artist_name is 'ID артиста';
+COMMENT ON COLUMN test_db.lastfm_history_data.streamable is 'Есть ли возможность прослушать песню на lastfm';
+COMMENT ON COLUMN test_db.lastfm_history_data.mbid is 'ID ...';
+COMMENT ON COLUMN test_db.lastfm_history_data.album_mbid is 'ID альбома';
+COMMENT ON COLUMN test_db.lastfm_history_data.album_name is 'Название альбома';
+COMMENT ON COLUMN test_db.lastfm_history_data.song_name is 'Название песни';
+COMMENT ON COLUMN test_db.lastfm_history_data.song_url is 'URL песни';
+COMMENT ON COLUMN test_db.lastfm_history_data.image_url is 'URL картинки';
+COMMENT ON COLUMN test_db.lastfm_history_data.dt_listen is 'Дата прослушивания песни';
+COMMENT ON COLUMN test_db.lastfm_history_data.dt_insert is 'Дата вставки записи';
+
+DROP VIEW test_db.v_lastfm_artist_unsaved_rows;
+
+ALTER TABLE test_db.lastfm_artists_data RENAME TO lastfm_artists;
+ALTER TABLE test_db.lastfm_artists_data_raw RENAME TO raw_lastfm_artists;
+ALTER TABLE test_db.lastfm_history_data RENAME TO lastfm_songs;
+ALTER TABLE test_db.lastfm_raw_data RENAME TO raw_lastfm_songs;
+
+ALTER VIEW test_db.v_lastfm_unsaved_rows RENAME TO v_lastfm_unsaved_songs;
+
+
+
+
+
+
+
