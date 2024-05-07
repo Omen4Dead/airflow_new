@@ -11,8 +11,6 @@ import csv
 import json
 import datetime as dt
 from datetime import timedelta
-import psycopg2
-import pandas as pd
 
 default_args = {
     "owner": "Nick",
@@ -107,7 +105,7 @@ def lastfm_transform():
 
     headers = songs[0].keys()
 
-    with open(f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}_old.csv',
+    with open(f'./files/csv_df/lastfm_csv_{date_from.date().strftime("%y%m%d")}_old.csv',
               mode='w',
               encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=headers)
@@ -120,6 +118,8 @@ def lasfm_transform_pandas():
     Парсинг JSON с использованием pandas
     :return:
     """
+    import pandas as pd
+
     context = get_current_context()
     date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
@@ -132,7 +132,7 @@ def lasfm_transform_pandas():
         data = file['recenttracks']['track']
         df = pd.json_normalize(data)
         print(df.head())
-        df.to_csv(path_or_buf=f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv',
+        df.to_csv(path_or_buf=f'./files/csv_df/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv',
                   sep=',')
 
 
@@ -141,6 +141,8 @@ def lastfm_load():
     Загрузка данных из CSV d
     :return:
     """
+    import psycopg2
+
     context = get_current_context()
     date_from = context['prev_execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
     date_to = context['execution_date'].replace(hour=0, minute=0, second=0, microsecond=0)
@@ -151,7 +153,7 @@ def lastfm_load():
         'user': "postgres",
         'password': "postgres"}
 
-    path = f'./files/tmp/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv'
+    path = f'./files/csv_df/lastfm_csv_{date_from.date().strftime("%y%m%d")}.csv'
 
     insert_query = """INSERT INTO test_db.raw_lastfm_songs (
                         artist_mbid, artist_name, streamable, mbid,
@@ -200,6 +202,9 @@ def lastfm_load():
 
 
 def lastfm_get_artists_info():
+    import pandas as pd
+    import psycopg2
+
     pg_config = {
         'host': "host.docker.internal",
         'database': "postgres",
@@ -271,7 +276,7 @@ def lastfm_get_artists_info():
             artist_info.append(artist_attrs)
 
         for row in artist_info:
-            curs.execute("""INSERT INTO test_db.lastfm_artists_raw (
+            curs.execute("""INSERT INTO test_db.raw_lastfm_artists (
                                       artist_name, artist_mbid, artist_url,
                                       tags, dt_published)
                                     VALUES (
@@ -288,12 +293,12 @@ def lastfm_get_artists_info():
 
         curs.execute("""INSERT INTO test_db.lastfm_artists
                           (surrogate_key, artist_name, artist_mbid, artist_url, tags, dt_published)
-                        select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key, 
+                        select md5(raw.artist_name || raw.artist_mbid || raw.artist_url) surrogate_key,
                                raw.artist_name, raw.artist_mbid,
                                raw.artist_url,  raw.tags,
                                raw.dt_published
-                          from test_db.lastfm_artists_raw raw
-                            ON conflict (surrogate_key) DO UPDATE 
+                          from test_db.raw_lastfm_artists raw
+                            ON conflict (surrogate_key) DO UPDATE
                            SET tags = EXCLUDED.tags,
                                dt_published = EXCLUDED.dt_published,
                                dt_insert = EXCLUDED.dt_insert""")
